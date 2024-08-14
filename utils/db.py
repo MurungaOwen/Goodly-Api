@@ -1,7 +1,11 @@
 from pymongo import MongoClient
 from decouple import config
 
-MONGO_URL = config("MONGO_URI", default="mongodb://localhost:27017")
+if config("PRODUCTION", cast=bool):
+    MONGO_URL = config("MONGO_URI")
+else:
+    MONGO_URL= "mongodb://localhost:27017"
+    
 DATABASE_NAME = "Goodly"
 
 class MongoDb():
