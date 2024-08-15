@@ -2,9 +2,10 @@ from pymongo import MongoClient
 from decouple import config
 
 if config("PRODUCTION", cast=bool):
-    MONGO_URL = config("MONGO_URI")
+    MONGO_URL = 'mongodb+srv://' + config("MONGO_USERNAME") + ':' + config("MONGO_PASSWORD") + '@' + config("MONGO_CLUSTER")
 else:
     MONGO_URL= "mongodb://localhost:27017"
+
     
 DATABASE_NAME = "Goodly"
 
