@@ -1,5 +1,6 @@
 from pymongo import MongoClient
 from decouple import config
+import motor.motor_asyncio
 
 if config("PRODUCTION", cast=bool):
     MONGO_URL = 'mongodb+srv://' + config("MONGO_USERNAME") + ':' + config("MONGO_PASSWORD") + '@' + config("MONGO_CLUSTER")
@@ -12,7 +13,7 @@ DATABASE_NAME = "Goodly"
 class MongoDb():
     def __init__(self):
         """class constructor"""
-        self.client = MongoClient(MONGO_URL)
+        self.client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_URL)
         self.db = self.client[DATABASE_NAME]
         print("we connected")
     
@@ -22,37 +23,38 @@ class MongoDb():
     
     def get_collection(self, collection_name: str):
         """get collection name"""
-        return self.db[collection_name]
+        result = self.db[collection_name]
+        return result
 
-    def insert_one(self, collection_name: str, document: dict):
+    async def insert_one(self, collection_name: str, document: dict):
         """insert values"""
         collection = self.get_collection(collection_name)
-        result = collection.insert_one(document)
+        result = await collection.insert_one(document)
         return str(result.inserted_id)
 
-    def find_one(self, collection_name: str, query: dict):
+    async def find_one(self, collection_name: str, query: dict):
         collection = self.get_collection(collection_name)
-        document = collection.find_one(query)
+        document = await collection.find_one(query)
         if document and "_id" in document:
             document["_id"] = str(document["_id"])  # Convert ObjectId to string
         return document
     
-    def find(self, collection_name: str, query: dict = {}):
+    async def find(self, collection_name: str, query: dict = {}):
         """list many"""
         collection = self.get_collection(collection_name)
-        documents = list(collection.find(query))
+        documents = list(await collection.find(query))
         for doc in documents:
             if "_id" in doc:
                 doc["_id"] = str(doc["_id"])  # Convert ObjectId to string
         return documents
 
-    def update_one(self, collection_name: str, query: dict, update: dict):
+    async def update_one(self, collection_name: str, query: dict, update: dict):
         collection = self.get_collection(collection_name)
-        result = collection.update_one(query, {"$set": update})
+        result = await collection.update_one(query, {"$set": update})
         return result.modified_count
 
-    def delete_one(self, collection_name: str, query: dict):
+    async def delete_one(self, collection_name: str, query: dict):
         collection = self.get_collection(collection_name)
-        result = collection.delete_one(query)
+        result = await collection.delete_one(query)
         return result.deleted_count
     
