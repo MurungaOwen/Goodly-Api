@@ -7,7 +7,8 @@ app = FastAPI()
 
 origins = [
     "http://localhost:8080",
-    "https://goodly.up.railway.app/"
+    "https://goodly.up.railway.app/",
+    "*"
 ]
 
 app.add_middleware(
@@ -50,6 +51,11 @@ async def create_contactMessage(contactData: dict):
     return {"success": "message_sent", "msgId": results}
 
 
-    
+@app.post("/mpesa")
+def process_message(message: dict):
+    print("response is {}".format(message.get("Body", {}).get("stkCallback", {})))
 
+
+    
+ 
 
