@@ -2,18 +2,18 @@ from typing import Union
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from models.user import User, Message
+from datetime import datetime
 app = FastAPI()
 
 
 origins = [
     "http://localhost:8080",
-    "https://goodly.up.railway.app/",
-    "*"
+    "https://goodly.up.railway.app/"
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,7 +38,7 @@ async def clerk_webhook(payload: dict):
             pass
     else:
         raise HTTPException(status_code=400, detail="Unsupported event type")
-    
+ 
     return {"new_user_added": new_user}
 
 from controllers.messageController import create_message
@@ -51,9 +51,46 @@ async def create_contactMessage(contactData: dict):
     return {"success": "message_sent", "msgId": results}
 
 
+from controllers.paymentController import stk_push, store_donation_data
+@app.post("/payment/mpesa/stk")
+def pay_via_mpesa(payment_data: dict):
+    amount = payment_data["amount"]
+    phone_number = payment_data["phone_number"]
+    try:
+        result = stk_push(phone_number, amount)
+        print("results is {}".format(result))
+        if result.get("ResponseCode", "") == "0":
+            return {"message": "Complete payment on phone"}
+        return {"message": result.get('errorMessage').split("-")[1]}
+    except Exception as e:
+        return {"error": e}
+
+
 @app.post("/mpesa")
-def process_message(message: dict):
-    print("response is {}".format(message.get("Body", {}).get("stkCallback", {})))
+async def process_payment_data(message: dict):
+    data = message['Body']['stkCallback']['CallbackMetadata']['Item']
+    amount = receipt_number = phone_number = None
+
+    for item in data:
+        if item['Name'] == 'Amount':
+            amount = item['Value']
+        elif item['Name'] == 'MpesaReceiptNumber':
+            receipt_number = item['Value']
+        elif item['Name'] == 'PhoneNumber':
+            phone_number = item['Value']
+        elif item['Name'] == 'TransactionDate':
+            transaction_date = datetime.strptime(str(item['Value']), "%Y%m%d%H%M%S")
+    transaction_details = {
+        "amount": amount,
+        "receipt_number": receipt_number,
+        "phone_number": phone_number,
+        "transaction_date": transaction_date
+    }
+    try:
+        results = await store_donation_data(transaction_details)
+        return {"success": results}
+    except Exception as e:
+        return {"error": e}
 
 
     

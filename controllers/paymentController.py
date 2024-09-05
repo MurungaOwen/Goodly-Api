@@ -52,5 +52,11 @@ def stk_push(phone_number, amount):
     response = rq.post(url, json=payload, headers=headers)
     return response.json()
 
-print(stk_push("254114884211", 1))
+from utils.db import MongoDb
+
+mongo = MongoDb()
+
+async def store_donation_data(details: dict):
+    results = await mongo.insert_one("Donation", details)
+    return results
 
