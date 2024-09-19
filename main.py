@@ -51,11 +51,13 @@ async def create_contactMessage(contactData: dict):
     return {"success": "message_sent", "msgId": results}
 
 
+name = None
+cause = None
 from controllers.paymentController import stk_push, store_donation_data
 @app.post("/payment/mpesa/stk")
-def pay_via_mpesa(payment_data: dict):
+def donate_via_mpesa(payment_data: dict):
     amount = payment_data["amount"]
-    phone_number = payment_data["phone_number"]
+    phone_number = payment_data["phone"]
     try:
         result = stk_push(phone_number, amount)
         print("results is {}".format(result))
@@ -67,7 +69,7 @@ def pay_via_mpesa(payment_data: dict):
 
 
 @app.post("/mpesa")
-async def process_payment_data(message: dict):
+async def process_donation_data(message: dict):
     data = message['Body']['stkCallback']['CallbackMetadata']['Item']
     amount = receipt_number = phone_number = None
 
